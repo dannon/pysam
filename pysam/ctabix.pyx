@@ -805,7 +805,7 @@ def tabix_compress(filename_in,
 
 def is_gzip_file(filename):
     gzip_magic_hex = b'1f8b'
-    header = open(filename, 'rb').read(2)
+    header = os.open(filename, 'rb').read(2)
     return header == binascii.a2b_hex(gzip_magic_hex)
 
 

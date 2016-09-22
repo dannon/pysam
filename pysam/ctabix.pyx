@@ -805,7 +805,7 @@ def tabix_compress(filename_in,
 
 def is_gzip_file(filename):
     gzip_magic_hex = b'1f8b'
-    fd = os.open(filename, 'rb')
+    fd = os.open(filename, os.O_RDONLY)
     header = os.read(fd, 2)
     return header == binascii.a2b_hex(gzip_magic_hex)
 
@@ -861,7 +861,6 @@ def tabix_index( filename,
        (seq_col is None or start_col is None or end_col is None):
         raise ValueError(
             "neither preset nor seq_col,start_col and end_col given")
-
     if not is_gzip_file(filename):
         tabix_compress(filename, filename + ".gz", force=force)
         if not keep_original:

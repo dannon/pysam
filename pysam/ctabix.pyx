@@ -52,6 +52,7 @@
 # DEALINGS IN THE SOFTWARE.
 #
 ###############################################################################
+import binascii
 import os
 import sys
 
@@ -801,6 +802,12 @@ def tabix_compress(filename_in,
     if r < 0:
         raise OSError("error when closing file %s" % filename_in)
 
+def is_gzip_file(filename):
+    gzip_magic_hex = b'1f8b'
+    fd = os.open(filename, os.O_RDONLY)
+    header = os.read(fd, 2)
+    return header == binascii.a2b_hex(gzip_magic_hex)
+
 def tabix_index( filename, 
                  force = False,
                  seq_col = None, 
@@ -810,6 +817,7 @@ def tabix_index( filename,
                  meta_char = "#",
                  zerobased = False,
                  int min_shift = -1,
+                 keep_original = False
                 ):
     '''index tab-separated *filename* using tabix.
 
@@ -832,20 +840,16 @@ def tabix_index( filename,
     
     Lines beginning with *meta_char* and the first
     *line_skip* lines will be skipped.
-    
-    If *filename* does not end in ".gz", it will be automatically
+
+    If *filename* is not detected as a gzip file it will be automatically
     compressed. The original file will be removed and only the 
     compressed file will be retained. 
-
-    If *filename* ends in *gz*, the file is assumed to be already
-    compressed with bgzf.
 
     *min-shift* sets the minimal interval size to 1<<INT; 0 for the
     old tabix index. The default of -1 is changed inside htslib to 
     the old tabix default of 0.
 
     returns the filename of the compressed data
-
     '''
     
     if not os.path.exists(filename):
@@ -856,9 +860,10 @@ def tabix_index( filename,
         raise ValueError(
             "neither preset nor seq_col,start_col and end_col given")
 
-    if not filename.endswith(".gz"): 
+    if not is_gzip_file(filename):
         tabix_compress(filename, filename + ".gz", force=force)
-        os.unlink( filename )
+        if not keep_original:
+            os.unlink( filename )
         filename += ".gz"
 
     if not force and os.path.exists(filename + ".tbi"):
